@@ -16,7 +16,7 @@ namespace EthersLite.Controllers
 
         public BlockchainController()
         {
-            string alchemyUrl = "https://eth-mainnet.g.alchemy.com/v2/vovATYrr_-TeqSK2nY1CO3rrCJKpgL-B";
+            string alchemyUrl = "";
             _web3 = new Web3(alchemyUrl);
         }
 
