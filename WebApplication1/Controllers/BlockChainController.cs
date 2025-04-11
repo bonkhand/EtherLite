@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Nethereum.Web3;
 using Nethereum.RPC.Eth.DTOs;
 using Nethereum.Hex.HexTypes;
@@ -14,9 +15,17 @@ namespace EthersLite.Controllers
     {
         private readonly Web3 _web3;
 
-        public BlockchainController()
+        public BlockchainController(IConfiguration configuration)
         {
-            string alchemyUrl = "";
+            // Fetch the Alchemy URL from appsettings.json
+            string? alchemyUrl = configuration["Ethereum:AlchemyUrl"];
+
+            // Validate that URL is not null/empty
+            if (string.IsNullOrEmpty(alchemyUrl))
+            {
+                throw new ArgumentException("AlchemyUrl is not configured. Please set it in appsettings.json.");
+            }
+
             _web3 = new Web3(alchemyUrl);
         }
 
@@ -25,17 +34,13 @@ namespace EthersLite.Controllers
         {
             try
             {
-                // Validate address
                 if (!Nethereum.Util.AddressUtil.Current.IsValidEthereumAddressHexFormat(address))
                     return BadRequest("Invalid Ethereum address.");
 
                 var txCount = await _web3.Eth.Transactions.GetTransactionCount.SendRequestAsync(address);
-
-                // Get wallet balance
                 var balanceWei = await _web3.Eth.GetBalance.SendRequestAsync(address);
                 var balanceEth = Web3.Convert.FromWei(balanceWei);
 
-                // Get current gas price
                 var gasPrice = await _web3.Eth.GasPrice.SendRequestAsync();
                 var gasPriceInGwei = Web3.Convert.FromWei(gasPrice, Nethereum.Util.UnitConversion.EthUnit.Gwei);
 
@@ -65,7 +70,6 @@ namespace EthersLite.Controllers
                     if (relatedTxs.Any())
                     {
                         var lastTx = relatedTxs.Last();
-
                         var txBlock = await _web3.Eth.Blocks
                             .GetBlockWithTransactionsByNumber
                             .SendRequestAsync(new BlockParameter(lastTx.BlockNumber));
